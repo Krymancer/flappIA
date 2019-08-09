@@ -8,7 +8,7 @@ import {
 } from "./layers.js"
 
 
-const totalPopulation = 500;
+const totalPopulation = 1000;
 let allBirds = [];
 let activeBirds = [];
 let generation = 0;
