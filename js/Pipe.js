@@ -23,7 +23,7 @@ export default class Pipe{
     }
 
     die(){
-        return this.pos.x < - pipeNorth.width;
+        return this.pos.x < -pipeNorth.width;
     }
 }
 

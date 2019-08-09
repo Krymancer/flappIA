@@ -8,15 +8,15 @@ import {
 } from "./layers.js"
 
 
-const totalPopulation = 1000;
+const totalPopulation = 500;
 let allBirds = [];
 let activeBirds = [];
-let counter = 0;
-let best = 0;
+let generation = 0;
+let bestScore = 0;
 
 var canvas = document.getElementById("game");
 var context = canvas.getContext("2d");
-
+context.font = '20px Roboto-Bold';
 //document.addEventListener("keydown",move);
 
 //const bird = new Bird(20,200);
@@ -51,7 +51,7 @@ function createPopulation() {
 function update() {
     //bird.update();
     pipes.forEach(pipe => {
-        pipe.update();
+
         if (pipe.die()) {
             pipe.pos.x = canvas.width;
             pipe.pos.y = -(Math.floor(Math.random()*160));
@@ -59,12 +59,15 @@ function update() {
 
         activeBirds.forEach((bird, index) => {
             bird.think(pipe);
-            bird.update();
+        });
 
+        activeBirds.forEach((bird, index) => {
+            bird.update();
             if (bird.die(pipe)) {
                 activeBirds.splice(index, 1);
             }
         });
+        pipe.update();
     });
 
     drawBackground(context);
@@ -73,20 +76,23 @@ function update() {
 
     activeBirds.forEach(bird => {
         bird.show(context);
-        if(bird.score > best){
-            best = bird.score;
+        if(bird.score > bestScore){
+            bestScore = bird.score;
         }
     });
 
     pipes.forEach(pipe => {
         pipe.show(context);
     });
+
     drawForeground(context);
 
     if (activeBirds.length === 0) {
         nextGeneration();
     }
 
+    context.fillText(`Generation: ${generation}`, 10,475);
+    context.fillText(`Best Score: ${bestScore}`, 10,500);
     requestAnimationFrame(update);
 }
 
@@ -94,8 +100,7 @@ createPopulation();
 update();
 
 function nextGeneration() {
-    counter++;
-    console.log('Generation:', counter, "Best:",best);
+    generation++;
     reset();
     normalizeFitness(allBirds);
     activeBirds = generate(allBirds);

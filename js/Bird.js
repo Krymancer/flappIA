@@ -41,15 +41,12 @@ export default class Bird{
 
     hitGround(){
         const hitGroundHeight = 370;
-        return this.pos.y > hitGroundHeight;
+        return this.pos.y >= hitGroundHeight;
     }
 
     collide(pipe){
-        if(this.pos.x> pipe.pos.x && this.pos.x < pipe.pos.x + pipe.width){
-            if(this.pos.y < pipe.pos.y + pipe.height || this.pos.y + this.height > pipe.pos.y + pipe.offset + pipe.height){
-               return true;
-            }
-        }
+        return (this.pos.x > pipe.pos.x && this.pos.x < pipe.pos.x + pipe.height)
+                && (this.pos.y < pipe.pos.y + pipe.height || this.pos.y > pipe.pos.y + pipe.offset + pipe.height);
     }
 
     think(pipe) {
