@@ -1,7 +1,7 @@
 import NeuralNetwork from "./NeuralNetwork.js"
 export default class Bird{
-    constructor(x,y,brain){
-        this.pos = {x,y};
+    constructor(brain){
+        this.pos = {x : 20,y : 200};
         this.vel = 0;
         this.force = 50;
         this.gravity = 10;
@@ -54,7 +54,25 @@ export default class Bird{
         return this.pos.x + this.width > pipe.pos.x && (this.pos.y < pipe.pos.y + pipe.height || this.pos.y + this.height > pipe.pos.y + pipe.height + pipe.offset); 
     }
     
-    think(pipe) {
+    think(pipes) {
+        // let closest = null;
+        // let record = Infinity;
+        // for (let i = 0; i < pipes.length; i++) {
+        //   let diff = pipes[i].pos.x - this.pos.x;
+        //   if (diff > 0 && diff < record) {
+        //     record = diff;
+        //     closest = pipes[i];
+        //   }
+        // }
+        let pipe;
+        if(pipes[0].pos.x < pipes[1].pos.x){
+            pipe = pipes[0];
+        }else{
+            pipe = pipes[1];
+        }
+
+        
+
         let inputs = [];
         // x position of closest pipe
         inputs[0] = map(pipe.pos.x, this.pos.x, 288, 0, 1);
@@ -64,7 +82,7 @@ export default class Bird{
         inputs[2] = map(pipe.pos.y + pipe.height + pipe.offset, 0, 512, 0, 1);
         // bird's y position
         inputs[3] = map(this.pos.y, 0, 512, 0, 1);
-        // pipe's y position
+        // pipe's x position
         inputs[4] = map(pipe.pos.x,0, 288,0,1);
         // Get the outputs from the network
         let action = this.brain.predict(inputs);
@@ -73,14 +91,14 @@ export default class Bird{
         }
     }
 
-      copy() {
-        return new Bird(this.brain);
-      }    
+    copy() {
+    return new Bird(this.brain);
+    }    
 }
 
 
 function mutate(x) {
-    if (random(1) < 0.1) {
+    if (Math.random() < 0.1) {
         let offset = randomZero_One() * 0.5;
         let newx = x + offset;
         return newx;

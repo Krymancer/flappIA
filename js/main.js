@@ -41,7 +41,7 @@ function move() {
 
 function createPopulation() {
     for (let i = 0; i < totalPopulation; i++) {
-        let bird = new Bird(20, 200);
+        let bird = new Bird();
         activeBirds[i] = bird;
         allBirds[i] = bird;
     }
@@ -66,11 +66,12 @@ function update() {
                 activeBirds.splice(index, 1);
             }
             
-            if(pipes[0].pos.x < pipes[1].pos.x){
-                bird.think(pipes[0]);
-            }else{
-                bird.think(pipes[1]);
-            }
+            // if(pipes[1].pos.x  > pipes[0].pos.x){
+            //     bird.think(pipes[1]);
+            // }else{
+            //     bird.think(pipes[0]);
+            // }
+            bird.think(pipes);
         });
 
         pipe.update();
@@ -112,7 +113,7 @@ function nextGeneration() {
 function generate(oldBirds) {
     let newBirds = [];
     oldBirds.forEach((bird,index) => {
-        newBirds[index] = new Bird(20,200,poolSelection(oldBirds));
+        newBirds[index] = new Bird(poolSelection(oldBirds).brain);
     });
     return newBirds;
 }
@@ -138,11 +139,11 @@ function poolSelection(birds) {
     while (r > 0) {
         r -= birds[index].fitness;
         // And move on to the next
-        index += 1;
+        index++;
     }
 
     // Go back one
-    index -= 1;
+    index--;
 
     return birds[index].copy();
 }
