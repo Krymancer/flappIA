@@ -1,6 +1,5 @@
 import Bird from "./Bird.js"
 import Pipe from "./Pipe.js"
-import NeuralNetwork from "./NeuralNetwork.js"
 
 import {
     drawBackground,
@@ -17,9 +16,9 @@ let bestScore = 0;
 var canvas = document.getElementById("game");
 var context = canvas.getContext("2d");
 context.font = '20px Roboto-Bold';
-//document.addEventListener("keydown",move);
 
-//const bird = new Bird(20,200);
+//document.addEventListener("keydown",move);
+// const bird = new Bird(20,200);
 
 const horizontalOffset = 170;
 
@@ -50,6 +49,10 @@ function createPopulation() {
 
 function update() {
     //bird.update();
+    if (activeBirds.length === 0) {
+        nextGeneration();
+    }
+
     pipes.forEach(pipe => {
 
         if (pipe.die()) {
@@ -58,21 +61,24 @@ function update() {
         }
 
         activeBirds.forEach((bird, index) => {
-            bird.think(pipe);
-        });
-
-        activeBirds.forEach((bird, index) => {
             bird.update();
             if (bird.die(pipe)) {
                 activeBirds.splice(index, 1);
             }
+            
+            if(pipes[0].pos.x < pipes[1].pos.x){
+                bird.think(pipes[0]);
+            }else{
+                bird.think(pipes[1]);
+            }
         });
+
         pipe.update();
     });
 
-    drawBackground(context);
 
-    //bird.show(context);
+
+    drawBackground(context);
 
     activeBirds.forEach(bird => {
         bird.show(context);
@@ -86,10 +92,6 @@ function update() {
     });
 
     drawForeground(context);
-
-    if (activeBirds.length === 0) {
-        nextGeneration();
-    }
 
     context.fillText(`Generation: ${generation}`, 10,475);
     context.fillText(`Best Score: ${bestScore}`, 10,500);

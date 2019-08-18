@@ -1,10 +1,10 @@
 import NeuralNetwork from "./NeuralNetwork.js"
-
 export default class Bird{
     constructor(x,y,brain){
         this.pos = {x,y};
-        this.vel = 30;
-        this.gravity = 1.5;
+        this.vel = 0;
+        this.force = 50;
+        this.gravity = 10;
         this.image = new Image();
         this.image.src = "assets/bird.png";
         this.width = 38;
@@ -18,37 +18,42 @@ export default class Bird{
             this.brain = brain.copy();
             this.brain.mutate(mutate);
           } else {
-            this.brain = new NeuralNetwork(6, 8, 2);
+            this.brain = new NeuralNetwork(5, 8, 2);
           }
     }
 
     jump(){
-        this.pos.y -= this.vel;
+        this.vel = 0;
+        this.pos.y -= this.force;
     }
 
     update(){
-        this.pos.y += this.gravity;
+        this.vel += this.gravity/100;
+        this.pos.y += this.vel;
         this.score++;
     }
 
     show(context){
+        context.strokeStyle = 'blue';
+        context.beginPath();
+        context.rect(this.pos.x,this.pos.y,this.width,this.height);
+        context.stroke();
         context.drawImage(this.image,this.pos.x,this.pos.y);
     }
 
     die(pipe){
-       return this.hitGround() || this.collide(pipe);
+       return this.outBounds() || this.collide(pipe);
     }
 
-    hitGround(){
+    outBounds(){
         const hitGroundHeight = 370;
-        return this.pos.y >= hitGroundHeight;
+        return this.pos.y + this.height >= hitGroundHeight || this.pos.y < 0;
     }
 
     collide(pipe){
-        return (this.pos.x > pipe.pos.x && this.pos.x < pipe.pos.x + pipe.height)
-                && (this.pos.y < pipe.pos.y + pipe.height || this.pos.y > pipe.pos.y + pipe.offset + pipe.height);
+        return this.pos.x + this.width > pipe.pos.x && (this.pos.y < pipe.pos.y + pipe.height || this.pos.y + this.height > pipe.pos.y + pipe.height + pipe.offset); 
     }
-
+    
     think(pipe) {
         let inputs = [];
         // x position of closest pipe
@@ -59,13 +64,10 @@ export default class Bird{
         inputs[2] = map(pipe.pos.y + pipe.height + pipe.offset, 0, 512, 0, 1);
         // bird's y position
         inputs[3] = map(this.pos.y, 0, 512, 0, 1);
-
-        inputs[4] = map(pipe.pos.x + pipe.width/2,this.pos.x,288,0,1);
-
-        inputs[5] = map(this.pos.y, pipe.pos.y + (pipe.height + pipe.offset/2) , 512,0,1);
+        // pipe's y position
+        inputs[4] = map(pipe.pos.x,0, 288,0,1);
         // Get the outputs from the network
         let action = this.brain.predict(inputs);
-        //console.log(inputs);
         if (action[1] > action[0]) {
             this.jump();
         }
