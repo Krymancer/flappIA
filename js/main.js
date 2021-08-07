@@ -1,149 +1,233 @@
-import Bird from "./Bird.js"
-import Pipe from "./Pipe.js"
+const canvas = document.getElementById('game');
+const context = canvas.getContext('2d');
 
-import {
-    drawBackground,
-    drawForeground
-} from "./layers.js"
+const random = (min, max) => Math.floor(Math.random() * (max - min)) + min;
 
-
-const totalPopulation = 1000;
-let allBirds = [];
-let activeBirds = [];
-let generation = 0;
-let bestScore = 0;
-
-var canvas = document.getElementById("game");
-var context = canvas.getContext("2d");
-context.font = '20px Roboto-Bold';
-
-//document.addEventListener("keydown",move);
-// const bird = new Bird(20,200);
-
-const horizontalOffset = 170;
-
-const pipes = [
-    new Pipe(canvas.width, -(Math.floor(Math.random() * 160))),
-    new Pipe(canvas.width + horizontalOffset, -(Math.floor(Math.random() * 160)))
-];
-
-function reset() {
-
-    pipes[0].pos.x = canvas.width;
-    pipes[0].pos.y = -(Math.floor(Math.random() * 160));
-    pipes[1].pos.x = canvas.width + horizontalOffset;
-    pipes[1].pos.y = -(Math.floor(Math.random() * 160));
+function getSprite(path) {
+    const image = new Image();
+    image.src = path;
+    return image
 }
 
-function move() {
-    bird.jump();
+const BACKGROUNDS = {
+    'day': getSprite('assets/sprites/background-day.png'),
+    'night': getSprite('assets/sprites/background-night.png')
 }
 
-function createPopulation() {
-    for (let i = 0; i < totalPopulation; i++) {
-        let bird = new Bird();
-        activeBirds[i] = bird;
-        allBirds[i] = bird;
+const BIRDS = {
+    'red': [
+        getSprite('assets/sprites/redbird-upflap.png'),
+        getSprite('assets/sprites/redbird-midflap.png'),
+        getSprite('assets/sprites/redbird-downflap.png')
+    ],
+    'blue': [
+        getSprite('assets/sprites/bluebird-upflap.png'),
+        getSprite('assets/sprites/bluebird-midflap.png'),
+        getSprite('assets/sprites/bluebird-downflap.png')
+    ],
+    'yellow': [
+        getSprite('assets/sprites/yellowbird-upflap.png'),
+        getSprite('assets/sprites/yellowbird-midflap.png'),
+        getSprite('assets/sprites/yellowbird-downflap.png')
+    ]
+}
+
+const PIPES = {
+    'red': {
+        'down': getSprite('assets/sprites/pipe-red.png'),
+        'up': getSprite('assets/sprites/pipe-red-up.png')
+    },
+    'green': {
+        'down': getSprite('assets/sprites/pipe-green.png'),
+        'up': getSprite('assets/sprites/pipe-green-up.png')
     }
 }
 
-function update() {
-    //bird.update();
-    if (activeBirds.length === 0) {
-        nextGeneration();
+const BASE = getSprite('assets/sprites/base.png');
+const FLOOR = (canvas.height - BASE.height * 2);
+
+class Base {
+    constructor(y) {
+        this.VEL = 5;
+        this.WIDTH = BASE.width * 2;
+        this.IMAGE = BASE;
+
+        this.y = y;
+        this.x1 = 0;
+        this.x2 = this.WIDTH
     }
 
-    pipes.forEach(pipe => {
+    move() {
+        this.x1 -= this.VEL;
+        this.x2 -= this.VEL;
 
-        if (pipe.die()) {
-            pipe.pos.x = canvas.width;
-            pipe.pos.y = -(Math.floor(Math.random()*160));
+        if (this.x1 + this.WIDTH < 0) {
+            this.x1 = this.x2 + this.WIDTH;
         }
 
-        activeBirds.forEach((bird, index) => {
-            bird.update();
-            if (bird.die(pipe)) {
-                activeBirds.splice(index, 1);
-            }
-            
-            // if(pipes[1].pos.x  > pipes[0].pos.x){
-            //     bird.think(pipes[1]);
-            // }else{
-            //     bird.think(pipes[0]);
-            // }
-            bird.think(pipes);
-        });
-
-        pipe.update();
-    });
-
-
-
-    drawBackground(context);
-
-    activeBirds.forEach(bird => {
-        bird.show(context);
-        if(bird.score > bestScore){
-            bestScore = bird.score;
+        if (this.x2 + this.WIDTH < 0) {
+            this.x2 = this.x1 + this.WIDTH;
         }
-    });
-
-    pipes.forEach(pipe => {
-        pipe.show(context);
-    });
-
-    drawForeground(context);
-
-    context.fillText(`Generation: ${generation}`, 10,475);
-    context.fillText(`Best Score: ${bestScore}`, 10,500);
-    requestAnimationFrame(update);
-}
-
-createPopulation();
-update();
-
-function nextGeneration() {
-    generation++;
-    reset();
-    normalizeFitness(allBirds);
-    activeBirds = generate(allBirds);
-    allBirds = activeBirds.slice();
-}
-
-function generate(oldBirds) {
-    let newBirds = [];
-    oldBirds.forEach((bird,index) => {
-        newBirds[index] = new Bird(poolSelection(oldBirds).brain);
-    });
-    return newBirds;
-}
-
-function normalizeFitness(birds) {
-    let sum = 0;
-    birds.forEach(bird => {
-        sum += bird.score;
-    });
-
-    birds.forEach(bird => {
-        bird.fitness = bird.score / sum;
-    });
-}
-
-function poolSelection(birds) {
-    let index = 0;
-    let r = Math.random();
-
-    // Keep subtracting probabilities until you get less than zero
-    // Higher probabilities will be more likely to be fixed since they will
-    // subtract a larger number towards zero
-    while (r > 0) {
-        r -= birds[index].fitness;
-        // And move on to the next
-        index++;
     }
 
-    // Go back one
-    index--;
-
-    return birds[index].copy();
+    draw(context) {
+        context.drawImage(this.IMAGE, this.x1, this.y, BASE.width * 2, BASE.height * 2);
+        context.drawImage(this.IMAGE, this.x2, this.y, BASE.width * 2, BASE.height * 2);
+    }
 }
+
+class Pipe {
+    constructor(x) {
+        this.GAP = 200;
+        this.VEL = 10;
+
+        this.x = x;
+        this.height = 0;
+
+        // Where the top and bottom of pipe is
+        this.top = 0;
+        this.bottom = 0;
+
+        this.PIPE_TOP = PIPES['green']['up'];
+        this.PIPE_BOTTOM = PIPES['green']['down'];
+        this.setHeight();
+    }
+
+    setHeight() {
+        this.height = random(50, 450);
+        this.top = this.height - this.PIPE_TOP.height * 2;
+        this.bottom = this.height + this.GAP;
+    }
+
+    move() {
+        this.x -= this.VEL;
+    }
+
+    draw(context) {
+        context.drawImage(this.PIPE_TOP, this.x, this.top, this.PIPE_TOP.width * 2, this.PIPE_TOP.height * 2);
+        context.drawImage(this.PIPE_BOTTOM, this.x, this.bottom, this.PIPE_BOTTOM.width * 2, this.PIPE_BOTTOM.height * 2);
+    }
+
+    collide(bird) {
+        return false
+    }
+}
+
+class Bird {
+    constructor(x, y) {
+        this.MAX_ROTATION = 25;
+        this.SPRITES = BIRDS['yellow']
+        this.ROT_VEL = 20;
+        this.ANIMATION_TIME = 5;
+
+        this.x = x;
+        this.y = y;
+        this.tilt = 0; // Degress to tilt
+        this.tickCount = 0;
+        this.vel = 0;
+        this.height = this.y;
+        this.imageCount = 0;
+        this.sprite = this.SPRITES[0];
+    }
+
+    jump() {
+        this.vel = 11.5;
+        this.tickCount = 0;
+        this.height = this.y;
+    }
+
+    move() {
+        this.tickCount++;
+
+        // For downward acceleration
+        let displacement = this.vel * (this.tickCount) + 0.5 * (3) * (this.tickCount) * (this.tickCount) // Dont even ask
+
+        // Terminal velocity
+        if (displacement >= 16) {
+            displacement = (displacement / Math.abs(displacement)) * 16
+        }
+
+        if (displacement < 0) {
+            displacement -= 2;
+        }
+
+        this.y = this.y + displacement;
+
+        if ((displacement < 0) || (this.y < this.height + 50)) { // Tilt up
+            if (this.tilt < this.MAX_ROTATION) this.tilt = this.MAX_ROTATION;
+        } else { // Tilt Down
+            if (this.tilt > -90) this.tilt -= this.ROT_VEL;
+        }
+    }
+
+    draw(context) {
+        this.imageCount++;
+
+        // Loop through images to animate bird
+        if (this.imageCount <= this.ANIMATION_TIME)
+            this.sprite = this.SPRITES[0];
+        else if (this.imageCount <= this.ANIMATION_TIME * 2)
+            this.sprite = this.SPRITES[1];
+        else if (this.imageCount <= this.ANIMATION_TIME * 3)
+            this.sprite = this.SPRITES[2];
+        else if (this.imageCount <= this.ANIMATION_TIME * 4)
+            this.sprite = this.SPRITES[1];
+        else if (this.imageCount <= this.ANIMATION_TIME * 4 + 1) {
+            this.sprite = this.SPRITES[0];
+            this.imageCount = 0;
+        }
+
+        // When bird is nose diving it isn't flapping
+        if (this.tilt <= -80) {
+            this.sprite = this.SPRITES[1]
+            this.imageCount = this.ANIMATION_TIME * 2
+        }
+
+        // Tilt bird
+        blitRotateCenter(context, this.sprite, this.x, this.y, this.tilt)
+
+
+
+    }
+}
+
+// TODO
+function blitRotateCenter(context, image, x, y, angle) {
+    context.drawImage(image, x, y, image.height * 2, image.width * 2);
+}
+
+
+function drawScreen(context, birds, pipes, base, score, generation, pipe_index) {
+    context.drawImage(BACKGROUNDS['day'], 0, 0, canvas.width, canvas.height);
+
+    pipes.forEach(pipe => pipe.draw(context));
+    birds.forEach(bird => bird.draw(context));
+
+    base.draw(context);
+}
+
+const base = new Base(FLOOR);
+const pipes = [];
+const birds = [];
+const score = 0;
+const generation = 0;
+const pipe_index = 0;
+
+pipes.push(new Pipe(canvas.width))
+birds.push(new Bird(230, 350))
+
+function draw() {
+    base.move();
+
+    pipes.forEach(pipe => pipe.move());
+    //birds.forEach(bird => bird.move());
+
+    drawScreen(context, birds, pipes, base, score, generation, pipe_index);
+    requestAnimationFrame(draw);
+}
+
+function init() {
+    draw();
+}
+
+init();
